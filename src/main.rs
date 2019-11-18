@@ -38,6 +38,7 @@ const APP: () = {
         let mut flash = _device.FLASH.constrain();
         let mut rcc = _device.RCC.constrain();
         let clocks = rcc.cfgr.freeze(&mut flash.acr);
+        // let clocks = rcc.cfgr.use_hse(8.mhz()).sysclk(72.mhz()).pclk1(36.mhz()).freeze(&mut flash.acr);
 
         let mut gpiob = _device.GPIOB.split(&mut rcc.apb2);
 
@@ -87,7 +88,7 @@ const APP: () = {
 
         // Configure the syst timer to trigger an update every second and enables interrupt
         let mut timer = Timer::tim1(_device.TIM1, &clocks, &mut rcc.apb2)
-            .start_count_down(1.hz());
+            .start_count_down(3.hz());
         timer.listen(Event::Update);
 
 
@@ -101,7 +102,7 @@ const APP: () = {
         }
     }
 
-    #[task(binds = USART2, resources = [rx2, tx2])]
+    #[task(binds = USART2, resources = [rx2, tx2], priority = 2)]
     fn usart2(cx: usart2::Context) {
 
         let usart2::Resources {
@@ -114,7 +115,7 @@ const APP: () = {
                 tx2.write(b).unwrap();
             }
             Err(_e) => {
-                writeln!(tx2, "Error").unwrap();
+                writeln!(tx2, "Serial Error: {:?}", _e).unwrap();
             }
         }
 
@@ -136,7 +137,7 @@ const APP: () = {
             *STATE = true;
         }
 
-        write!(cx.resources.tx3, "{}", COUNT).unwrap();
+        writeln!(cx.resources.tx3, "{}", COUNT).unwrap();
         *COUNT += 1;
     }
 };
